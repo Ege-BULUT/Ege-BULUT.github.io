@@ -214,7 +214,9 @@ function onMouseMove(event) {
 
   if (intersects.length > 0) {
     const object = intersects[0].object;
-    showTooltip(object, event);
+    if (Object.hasOwn(object, 'userData')) {
+      showTooltip(object, event);
+    }
   } else {
     tooltip.style.display = 'none';
   }
