@@ -231,6 +231,7 @@ function onMouseMove(event) {
   } else {
     tooltip.style.display = 'none';
   }
+}
 
 function onClick(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
