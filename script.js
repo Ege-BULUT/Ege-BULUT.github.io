@@ -1,6 +1,6 @@
 const roadmapData = [
   {
-    "başlık": "1. ProjectYB Websitesi açılışı",
+    "başlık": "1. Websitesi açılışı",
     "açıklama": "Rezervasyon, Yorum ve yıldızlama özellikleri, akıllı arama özelliği",
     "tarih": "11/2025",
     "durum": "Yapım Aşamasında"
@@ -12,13 +12,13 @@ const roadmapData = [
     "durum": "Planlandı"
   },
   {
-    "başlık": "3. Mobil Uygulama Yayınlanması",
+    "başlık": "3. Mobil Uygulama",
     "açıklama": "ProjectYB Android ve IOS uygulamaları",
     "tarih": "03/2026",
     "durum": "Planlanıyor"
   },
   {
-    "başlık": "4. Akıllı ProjectYB Asistanı",
+    "başlık": "4. Akıllı Asistan",
     "açıklama": "Hem işletmelere hem kullanıcılara yönelik akıllı asistan! (Harika özellikler eklenecek, ProjectYB V2.0)",
     "tarih": "06/2026",
     "durum": "Planlanıyor"
@@ -61,6 +61,10 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(5, 5, 5);
   scene.add(directionalLight);
+
+  const pointLight = new THREE.PointLight(0xffffff, 1, 100);
+  pointLight.position.set(10, 10, 10);
+  scene.add(pointLight);
 
   // Raycaster
   raycaster = new THREE.Raycaster();
@@ -113,7 +117,66 @@ function createSpheres() {
     
     scene.add(sphere);
     spheres.push(sphere);
+
+    // 3D Text Creation
+    create3DText(item, sphere, sphereRadius);
   });
+}
+
+function create3DText(item, parentSphere, sphereRadius) {
+  // Başlık için text
+  const titleText = createTextSprite(item.başlık, {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white'
+  });
+  titleText.position.y = sphereRadius + 0.8;
+  parentSphere.add(titleText);
+
+  // Tarih ve durum için text
+  const infoText = createTextSprite(`${item.tarih} - ${item.durum}`, {
+    fontSize: 16,
+    fontWeight: 'normal',
+    color: item.durum.includes('Yapım') || item.durum.includes('Tamamlandı') 
+      ? '#ffcc00' 
+      : '#d8b4fe'
+  });
+  infoText.position.y = sphereRadius + 0.3;
+  parentSphere.add(infoText);
+}
+
+function createTextSprite(text, style) {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  
+  // Canvas boyutunu ayarla
+  context.font = `${style.fontWeight} ${style.fontSize}px Arial`;
+  const textWidth = context.measureText(text).width;
+  canvas.width = textWidth * 2;
+  canvas.height = style.fontSize * 2;
+  
+  // Arka planı temizle
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Text stilini ayarla
+  context.font = `${style.fontWeight} ${style.fontSize}px Arial`;
+  context.fillStyle = style.color;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(text, canvas.width / 2, canvas.height / 2);
+  
+  // Texture oluştur
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({ 
+    map: texture,
+    transparent: true,
+    opacity: 0.9
+  });
+  
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(canvas.width / 100, canvas.height / 100, 1);
+  
+  return sprite;
 }
 
 function createConnections() {
@@ -188,6 +251,13 @@ function animate() {
   spheres.forEach(sphere => {
     sphere.rotation.x += 0.005;
     sphere.rotation.y += 0.005;
+    
+    // Text'leri de döndür ki her zaman kameraya baksın
+    sphere.children.forEach(child => {
+      if (child instanceof THREE.Sprite) {
+        child.quaternion.copy(camera.quaternion);
+      }
+    });
   });
 
   controls.update();
