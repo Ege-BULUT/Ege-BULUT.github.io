@@ -37,8 +37,10 @@ animate();
 function init() {
   // Scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0a1a);
-
+  // scene.background = new THREE.Color(0x0a0a1a);
+  const textureLoader = new THREE.TextureLoader();
+  const backgroundTexture = textureLoader.load('https://cdn.wallpapersafari.com/9/23/f36Oaq.jpg');
+  scene.background = backgroundTexture;
   // Camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.z = 20;
