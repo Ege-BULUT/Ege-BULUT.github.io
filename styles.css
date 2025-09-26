@@ -8,11 +8,9 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: #f4f4f4;
 }
 
 #canvas-container {
-  position: relative;
   background: url('https://cdn.wallpapersafari.com/9/23/f36Oaq.jpg') center/cover no-repeat;
 }
 
