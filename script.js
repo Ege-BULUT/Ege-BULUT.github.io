@@ -175,6 +175,7 @@ function createTextSprite(text, style) {
   
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(canvas.width / 100, canvas.height / 100, 1);
+  sprite.isTextSprite = true;
   
   return sprite;
 }
@@ -214,13 +215,22 @@ function onMouseMove(event) {
 
   if (intersects.length > 0) {
     const object = intersects[0].object;
-    if (Object.hasOwn(object, 'userData')) {
+    
+    // Text sprite'lara tooltip gösterme
+    if (object.isTextSprite) {
+      tooltip.style.display = 'none';
+      return;
+    }
+    
+    // Sadece kürelere tooltip göster
+    if (object.userData && Object.hasOwn(object.userData, 'başlık')) {
       showTooltip(object, event);
+    } else {
+      tooltip.style.display = 'none';
     }
   } else {
     tooltip.style.display = 'none';
   }
-}
 
 function onClick(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
