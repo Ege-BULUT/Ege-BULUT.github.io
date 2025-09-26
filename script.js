@@ -126,7 +126,7 @@ function createSpheres() {
 function create3DText(item, parentSphere, sphereRadius) {
   // Başlık için text
   const titleText = createTextSprite(item.başlık, {
-    fontSize: 24,
+    fontSize: 48,
     fontWeight: 'bold',
     color: 'white'
   });
@@ -135,7 +135,7 @@ function create3DText(item, parentSphere, sphereRadius) {
 
   // Tarih ve durum için text
   const infoText = createTextSprite(`${item.tarih} - ${item.durum}`, {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: 'normal',
     color: item.durum.includes('Yapım') || item.durum.includes('Tamamlandı') 
       ? '#ffcc00' 
