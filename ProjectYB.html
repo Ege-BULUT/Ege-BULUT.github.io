@@ -3,190 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ProjectYB Roadmap</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-  <style>
-    body {
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      font-family: 'Segoe UI', sans-serif;
-      overflow: hidden;
-    }
-
-    .glass {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    .node {
-      cursor: grab;
-      transition: transform 0.2s ease;
-    }
-
-    .node:active {
-      cursor: grabbing;
-    }
-
-    .completed {
-      background: radial-gradient(circle, #ff7e00, #ff5500);
-    }
-
-    .planned {
-      background: radial-gradient(circle, #8b5cf6, #6d28d9);
-    }
-  </style>
+  <title>ProjectYB 3D Roadmap</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="h-screen w-screen flex items-center justify-center text-white">
+<body class="bg-gray-900 overflow-hidden">
+  <div id="canvas-container" class="w-full h-screen"></div>
 
-  <div id="roadmap" class="relative w-full h-full"></div>
+  <div id="tooltip" class="fixed hidden bg-black/70 text-white p-4 rounded-lg backdrop-blur-md border border-white/20 z-50 max-w-xs">
+    <h3 class="font-bold text-lg"></h3>
+    <p class="text-sm mt-1"></p>
+    <div class="text-xs mt-2 text-gray-300"></div>
+  </div>
 
-  <script>
-    const roadmapData = [
-      {
-        "başlık": "1. ProjectYB Websitesi açılışı",
-        "açıklama": "Rezervasyon, Yorum ve yıldızlama özellikleri, akıllı arama özelliği",
-        "tarih": "11/2025",
-        "durum": "Yapım Aşamasında"
-      },
-      {
-        "başlık": "2. Yorum analizleri",
-        "açıklama": "İşletmelerin güçlü yanlarını açığa çıkarıp tanıtacak olan özellik!",
-        "tarih": "01/2026",
-        "durum": "Planlandı"
-      },
-      {
-        "başlık": "3. Mobil Uygulama Yayınlanması",
-        "açıklama": "ProjectYB Android ve IOS uygulamaları",
-        "tarih": "03/2026",
-        "durum": "Planlanıyor"
-      },
-      {
-        "başlık": "4. Akıllı ProjectYB Asistanı",
-        "açıklama": "Hem işletmelere hem kullanıcılara yönelik akıllı asistan! (Harika özellikler eklenecek, ProjectYB V2.0)",
-        "tarih": "06/2026",
-        "durum": "Planlanıyor"
-      }
-    ];
-
-    const Engine = Matter.Engine,
-          Render = Matter.Render,
-          Runner = Matter.Runner,
-          Bodies = Matter.Bodies,
-          Body = Matter.Body,
-          Composite = Matter.Composite,
-          Mouse = Matter.Mouse,
-          MouseConstraint = Matter.MouseConstraint;
-
-    const engine = Engine.create();
-    engine.world.gravity.y = 0;
-
-    const render = Render.create({
-      element: document.getElementById('roadmap'),
-      engine: engine,
-      options: {
-        width: window.innerWidth,
-        height: window.innerHeight,
-        wireframes: false,
-        background: 'transparent'
-      }
-    });
-
-    const runner = Runner.create();
-    Runner.run(runner, engine);
-    Render.run(render);
-
-    const mouse = Mouse.create(render.canvas);
-    const mouseConstraint = MouseConstraint.create(engine, {
-      mouse: mouse,
-      constraint: { stiffness: 0.2 }
-    });
-    Composite.add(engine.world, mouseConstraint);
-    render.mouse = mouse;
-
-    const nodes = [];
-    const connections = [];
-
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    const radius = 150;
-
-    roadmapData.forEach((item, i) => {
-      const angle = (i / roadmapData.length) * Math.PI * 2;
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
-
-      const isCompleted = item.durum.includes("Yapım") || item.durum.includes("Tamamlandı");
-      const colorClass = isCompleted ? 'completed' : 'planned';
-
-      const circle = Bodies.circle(x, y, 50, {
-        render: {
-          fillStyle: isCompleted ? '#ff5500' : '#8b5cf6',
-          strokeStyle: 'white',
-          lineWidth: 2
-        },
-        restitution: 0.8,
-        friction: 0.01
-      });
-
-      circle.data = item;
-      circle.label = `node-${i}`;
-      nodes.push(circle);
-
-      Composite.add(engine.world, circle);
-    });
-
-    // Bağlantı çizgileri
-    for (let i = 0; i < nodes.length - 1; i++) {
-      const line = Matter.Constraint.create({
-        bodyA: nodes[i],
-        bodyB: nodes[i + 1],
-        stiffness: 0.05,
-        render: {
-          strokeStyle: '#ffffff55',
-          lineWidth: 2
-        }
-      });
-      Composite.add(engine.world, line);
-    }
-
-    // Tooltip gösterimi
-    document.addEventListener('mousemove', e => {
-      const mousePos = { x: e.clientX, y: e.clientY };
-      nodes.forEach(node => {
-        const pos = node.position;
-        const dist = Math.hypot(pos.x - mousePos.x, pos.y - mousePos.y);
-        if (dist < 60) {
-          showTooltip(node, mousePos);
-        }
-      });
-    });
-
-    function showTooltip(node, pos) {
-      const tooltip = document.getElementById('tooltip');
-      const data = node.data;
-      tooltip.innerHTML = `
-        <div class="text-lg font-bold">${data.başlık}</div>
-        <div class="text-sm mt-1">${data.açıklama}</div>
-        <div class="text-xs mt-2 text-gray-300">${data.tarih} - ${data.durum}</div>
-      `;
-      tooltip.style.display = 'block';
-      tooltip.style.left = pos.x + 20 + 'px';
-      tooltip.style.top = pos.y + 20 + 'px';
-    }
-
-    // Tooltip container
-    const tooltip = document.createElement('div');
-    tooltip.id = 'tooltip';
-    tooltip.className = 'glass absolute p-4 rounded-lg text-sm hidden z-10';
-    document.body.appendChild(tooltip);
-
-    window.addEventListener('resize', () => {
-      render.options.width = window.innerWidth;
-      render.options.height = window.innerHeight;
-      Render.setPixelRatio(render, window.devicePixelRatio);
-    });
-  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.min.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
