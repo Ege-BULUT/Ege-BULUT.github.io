@@ -229,7 +229,7 @@ function onClick(event) {
 
   if (intersects.length > 0) {
     const object = intersects[0].object;
-    alert(`Seçilen: ${object.userData.başlık}`);
+    //alert(`Seçilen: ${object.userData.başlık}`);
   }
 }
 
