@@ -1,6 +1,7 @@
 /* Global styles */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', sans-serif;
+    overflow: hidden;
     margin: 0;
     padding: 0;
     display: flex;
@@ -8,6 +9,19 @@ body {
     align-items: center;
     height: 100vh;
     background-color: #f4f4f4;
+}
+
+#canvas-container {
+  position: relative;
+}
+
+canvas {
+  display: block;
+}
+
+#tooltip {
+  pointer-events: none;
+  transform: translate(-50%, -100%);
 }
 
 /* Button container styles */
