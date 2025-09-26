@@ -13,6 +13,7 @@ body {
 
 #canvas-container {
   position: relative;
+  background: url('https://cdn.wallpapersafari.com/9/23/f36Oaq.jpg') center/cover no-repeat;
 }
 
 canvas {
