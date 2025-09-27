@@ -27,18 +27,6 @@ const roadmapData = [
     "açıklama": "Hem işletmelere hem kullanıcılara yönelik akıllı asistan! (Harika özellikler eklenecek, ProjectYB V2.0)",
     "tarih": "06/2026",
     "durum": "Planlanıyor"
-  },
-  {
-    "başlık": "5. Testo Pesto",
-    "açıklama": "Hem işletmelere hem kullanıcılara yönelik akıllı asistan! (Harika özellikler eklenecek, ProjectYB V2.0)",
-    "tarih": "06/2026",
-    "durum": "Planlanıyor"
-  },
-  {
-    "başlık": "6. Number Six Test",
-    "açıklama": "Hem işletmelere hem kullanıcılara yönelik akıllı asistan! (Harika özellikler eklenecek, ProjectYB V2.0)",
-    "tarih": "06/2026",
-    "durum": "Planlanıyor"
   }
 ];
 
