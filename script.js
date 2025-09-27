@@ -44,17 +44,17 @@ let composer;
 init();
 animate();
 
-function init() {
+async function init() {
   // Scene
   scene = new THREE.Scene();
   // scene.background = new THREE.Color(0x0a0a1a);
   //scene.background = new THREE.Color(0x000000);
   const textureLoader = new THREE.TextureLoader();
-  const backgroundTexture = textureLoader.load('stars.jpg');
-  scene.background = backgroundTexture;
+  const backgroundTexture = await textureLoader.loadAsync('stars.jpg');
   
-  const targetAspect = 1920 / 1080;
-  const imageAspect = 2048 / 2048;
+  scene.background = backgroundTexture;
+  const targetAspect = window.innerWidth / window.innerHeight;
+  const imageAspect = backgroundTexture.image.width / backgroundTexture.image.height ;
   const factor = imageAspect / targetAspect;
   // When factor larger than 1, that means texture 'wilder' than target。 
   // we should scale texture height to target height and then 'map' the center  of texture to target， and vice versa.
@@ -213,8 +213,6 @@ function createSpheres() {
       emissiveIntensity: item.durum.includes('Yapım') || item.durum.includes('Tamamlandı') 
         ? 0.015 
         : 0,
-
-
         
       metalness: 0.01,
       roughness: 0.3,
