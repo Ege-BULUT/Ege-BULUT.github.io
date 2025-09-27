@@ -27,6 +27,12 @@ const roadmapData = [
     "açıklama": "Hem işletmelere hem kullanıcılara yönelik akıllı asistan! (Harika özellikler eklenecek, ProjectYB V2.0)",
     "tarih": "06/2026",
     "durum": "Planlanıyor"
+  },
+  {
+    "başlık": "5. Versiyon 2.0",
+    "açıklama": "Harika özellikler eklenecek, ProjectYB V2.0",
+    "tarih": "01/2027",
+    "durum": "Planlanıyor"
   }
 ];
 
@@ -304,11 +310,11 @@ function createTextSprite(text, style) {
   return sprite;
 }
 
-function createConnections() {
+function createConnections2() {
   const material = new THREE.LineBasicMaterial({ 
     color: 0xffffff, 
     transparent: true, 
-    opacity: 0.3 
+    opacity: 0.8 
   });
 
   for (let i = 0; i < spheres.length - 1; i++) {
@@ -323,6 +329,98 @@ function createConnections() {
     lines.push(line);
   }
 }
+
+function createConnections() { //star
+  const material = new THREE.LineBasicMaterial({ 
+    color: 0xffffff, 
+    transparent: true, 
+    opacity: 0.6 
+  });
+  
+  const material2 = new THREE.LineBasicMaterial({ 
+    color: 0x222222, 
+    transparent: true, 
+    opacity: 0.1 
+  });
+
+  const a = spheres[0].position.clone();
+  const b = spheres[spheres.length - 1].position.clone();
+
+  const mid = a.clone().add(b).multiplyScalar(0.5);  // (A+B)/2
+  const control = mid.clone().multiplyScalar(0.5);   // ((A+B)/2)/2
+
+  const points = [a, control, b];
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const line = new THREE.Line(geometry, material2);
+  scene.add(line);
+  lines.push(line);
+
+  for (let i = 0; i < spheres.length - 1; i++) {
+    const a = spheres[i].position.clone();
+    const b = spheres[i + 1].position.clone();
+
+    const mid = a.clone().add(b).multiplyScalar(0.5);  // (A+B)/2
+    const control = mid.clone().multiplyScalar(0.5);   // ((A+B)/2)/2
+
+    const points = [a, control, b];
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const line = new THREE.Line(geometry, material);
+    scene.add(line);
+    lines.push(line);
+  }
+}
+
+function createConnections3() { // bezier curve 
+  const material = new THREE.LineBasicMaterial({ 
+    color: 0xffffff, 
+    transparent: true, 
+    opacity: 0.8 
+  });
+
+    
+  const material2 = new THREE.LineBasicMaterial({ 
+    color: 0x222222, 
+    transparent: true, 
+    opacity: 0.1 
+  });
+  
+  const ORIGIN = new THREE.Vector3(); // (0,0,0)
+  const SEGMENTS = 32;                // eğri örnek sayısı
+  const bend = 0.5;                   // 0=hiç içeri çekme, 1=merkeze kadar
+
+  const a = spheres[0].position.clone();
+  const b = spheres[spheres.length - 1].position.clone();
+
+  // Orta nokta ve içeri çekilmiş kontrol noktası:
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  const control = mid.clone().lerp(ORIGIN, bend); // mid * (1 - bend) çünkü origin 0
+
+  const curve = new THREE.QuadraticBezierCurve3(a, control, b);
+  const pts = curve.getPoints(SEGMENTS);
+
+  const geometry = new THREE.BufferGeometry().setFromPoints(pts);
+  const line = new THREE.Line(geometry, material);
+  scene.add(line);
+  lines.push(line);
+
+  for (let i = 0; i < spheres.length - 1; i++) {
+    const a = spheres[i].position.clone();
+    const b = spheres[i + 1].position.clone();
+
+    // Orta nokta ve içeri çekilmiş kontrol noktası:
+    const mid = a.clone().add(b).multiplyScalar(0.5);
+    const control = mid.clone().lerp(ORIGIN, bend); // mid * (1 - bend) çünkü origin 0
+
+    const curve = new THREE.QuadraticBezierCurve3(a, control, b);
+    const pts = curve.getPoints(SEGMENTS);
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(pts);
+    const line = new THREE.Line(geometry, material);
+    scene.add(line);
+    lines.push(line);
+  }
+}
+
 
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -388,6 +486,9 @@ function onHover(event) {
     // 3) userData kontrolü
     if (hit.userData && hit.userData.başlık) {
       // her harekette renk değiştirmek istemiyorsan bu satırı koşullu yap
+      if (lastHovered !== hit) {
+        hit.scale.set(0.9 + Math.random()/4, 0.9 + Math.random()/4, 0.9 + Math.random()/4);
+      }
       showTooltip(hit, event);
       lastHovered = hit;
     } else {
