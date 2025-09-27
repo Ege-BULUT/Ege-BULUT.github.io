@@ -33,7 +33,7 @@ const roadmapData = [
 let scene, camera, renderer, controls;
 let spheres = [];
 let lines = [];
-let raycaster, mouse; 
+let raycaster, mouse, lastHovered;
 let mouseLight;
 let mouseGlowSphere;
 let mouseWorldPosition = new THREE.Vector3();
@@ -64,6 +64,7 @@ async function init() {
   scene.background.repeat.y = factor > 1 ? 1 : factor;
 
   
+  
   // Camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.z = 20;
@@ -75,6 +76,11 @@ async function init() {
   renderer.toneMapping = THREE.ReinhardToneMapping;
   renderer.toneMappingExposure = Math.pow(1.5, 4.0);
   document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+  renderer.domElement.addEventListener('mousemove', onHover);
+  // touch support:
+  renderer.domElement.addEventListener('touchmove', (e)=> onHover(e.touches[0]));
+
 
   // Effect Composer for Bloom
   composer = new THREE.EffectComposer(renderer);
@@ -134,6 +140,8 @@ async function init() {
   // Raycaster
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
+  lastHovered = null;
+
 
   // Create spheres
   createSpheres();
@@ -356,21 +364,68 @@ function onClick(event) {
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(spheres);
 
-  if (intersects.length > 0) {
+  if (intersects[0].object.userData.başlık) {
     const object = intersects[0].object;
-    //alert(`Seçilen: ${object.userData.başlık}`);
+    //alert(`${object.userData.başlık}: \n ${object.userData.açıklama} \n\n Tahmini Tarih: ${object.userData.tarih} | Durum: ${object.userData.durum}`);
   }
+}
+
+function onHover(event) {
+  // 1) Mouse'u canvas'a göre normalize et
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = (event.clientX - rect.left) / rect.width;
+  const y = (event.clientY - rect.top) / rect.height;
+  mouse.x =  x * 2 - 1;
+  mouse.y = -y * 2 + 1;
+
+  // 2) Raycast
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(spheres, true); // çocukları da tara
+
+  if (intersects.length > 0) {
+    const hit = intersects[0].object;
+
+    // 3) userData kontrolü
+    if (hit.userData && hit.userData.başlık) {
+      // her harekette renk değiştirmek istemiyorsan bu satırı koşullu yap
+      if (lastHovered !== hit) {
+        hit.material.color.set(Math.random() * 0xffffff);
+      }
+      showTooltip(hit, event);
+      lastHovered = hit;
+    } else {
+      hideTooltip();
+      lastHovered = null;
+    }
+  } else {
+    hideTooltip();
+    lastHovered = null;
+  }
+
+  // 4) Render
+  renderer.render(scene, camera);
 }
 
 function showTooltip(object, event) {
   const data = object.userData;
-  tooltip.querySelector('h3').textContent = data.başlık;
-  tooltip.querySelector('p').textContent = data.açıklama;
-  tooltip.querySelector('div').textContent = `${data.tarih} - ${data.durum}`;
-  
+
+  tooltip.querySelector('h3').textContent = data.başlık || '';
+  tooltip.querySelector('p').textContent = data.açıklama || '';
+  tooltip.querySelector('div').textContent = `${data.tarih || ''} - ${data.durum || ''}`;
+
+  // Tooltip konumlandırma (scroll'u hesaba kat)
+  const offset = 12;
+  const left = event.clientX + window.scrollX + offset;
+  const top  = event.clientY + window.scrollY + offset;
+
   tooltip.style.display = 'block';
-  tooltip.style.left = event.clientX + 'px';
-  tooltip.style.top = event.clientY + 'px';
+  tooltip.style.position = 'absolute'; // ya da 'fixed' istiyorsan scrollX/Y ekleme
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+}
+
+function hideTooltip() {
+  tooltip.style.display = 'none';
 }
 
 function createMouseParticles() {
