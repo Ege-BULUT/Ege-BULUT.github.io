@@ -1,3 +1,8 @@
+// <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/postprocessing/EffectComposer.js"></script>
+// <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/postprocessing/RenderPass.js"></script>
+// <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+
 const roadmapData = [
   {
     "başlık": "1. Websitesi açılışı",
@@ -22,14 +27,31 @@ const roadmapData = [
     "açıklama": "Hem işletmelere hem kullanıcılara yönelik akıllı asistan! (Harika özellikler eklenecek, ProjectYB V2.0)",
     "tarih": "06/2026",
     "durum": "Planlanıyor"
+  },
+  {
+    "başlık": "5. Testo Pesto",
+    "açıklama": "Hem işletmelere hem kullanıcılara yönelik akıllı asistan! (Harika özellikler eklenecek, ProjectYB V2.0)",
+    "tarih": "06/2026",
+    "durum": "Planlanıyor"
+  },
+  {
+    "başlık": "6. Number Six Test",
+    "açıklama": "Hem işletmelere hem kullanıcılara yönelik akıllı asistan! (Harika özellikler eklenecek, ProjectYB V2.0)",
+    "tarih": "06/2026",
+    "durum": "Planlanıyor"
   }
 ];
 
 let scene, camera, renderer, controls;
 let spheres = [];
 let lines = [];
-let raycaster, mouse;
+let raycaster, mouse; 
+let mouseLight;
+let mouseGlowSphere;
+let mouseWorldPosition = new THREE.Vector3();
+let lastMouseMoveTime = 0;
 let tooltip = document.getElementById('tooltip');
+let composer;
 
 init();
 animate();
@@ -38,9 +60,22 @@ function init() {
   // Scene
   scene = new THREE.Scene();
   // scene.background = new THREE.Color(0x0a0a1a);
+  //scene.background = new THREE.Color(0x000000);
   const textureLoader = new THREE.TextureLoader();
-  const backgroundTexture = textureLoader.load('https://cdn.wallpapersafari.com/9/23/f36Oaq.jpg');
+  const backgroundTexture = textureLoader.load('stars.jpg');
   scene.background = backgroundTexture;
+  
+  const targetAspect = 1920 / 1080;
+  const imageAspect = 2048 / 2048;
+  const factor = imageAspect / targetAspect;
+  // When factor larger than 1, that means texture 'wilder' than target。 
+  // we should scale texture height to target height and then 'map' the center  of texture to target， and vice versa.
+  scene.background.offset.x = factor > 1 ? (1 - 1 / factor) / 2 : 0;
+  scene.background.repeat.x = factor > 1 ? 1 / factor : 1;
+  scene.background.offset.y = factor > 1 ? 0 : (1 - factor) / 2;
+  scene.background.repeat.y = factor > 1 ? 1 : factor;
+
+  
   // Camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.z = 20;
@@ -49,24 +84,64 @@ function init() {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.toneMapping = THREE.ReinhardToneMapping;
+  renderer.toneMappingExposure = Math.pow(1.5, 4.0);
   document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+  // Effect Composer for Bloom
+  composer = new THREE.EffectComposer(renderer);
+  const renderPass = new THREE.RenderPass(scene, camera);
+  composer.addPass(renderPass);
+
+  const bloomPass = new THREE.UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    0.0,    // strength
+    0.1,    // radius
+    1.0    // threshold
+  );
+  composer.addPass(bloomPass);
 
   // OrbitControls
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
 
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  //Lighting (emissive objeler için aydınlatma azaltılabilir)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.005);
   scene.add(ambientLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-  directionalLight.position.set(5, 5, 5);
-  scene.add(directionalLight);
+  //const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  //directionalLight.position.set(10, 5, 5);
+  //scene.add(directionalLight);
 
   const pointLight = new THREE.PointLight(0xffffff, 1, 100);
-  pointLight.position.set(10, 10, 10);
+  //pointLight.position.set(10, 10, 10);
+  pointLight.position.set(0, 0, 0);
   scene.add(pointLight);
+
+  mouseLight = new THREE.PointLight(0xc941eb, 1, 50);
+  mouseLight.position.set(0, 0, 0);
+  scene.add(mouseLight);
+  // Mouse'da görünen glowing küre
+  const glowGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+  const glowMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xc941eb,
+    emissive: 0xc941eb,
+    emissiveIntensity: 2,
+    transparent: true,
+    opacity: 0.6,
+    metalness: 0,
+    roughness: 0,
+    clearcoat: 1
+  });
+
+  mouseGlowSphere = new THREE.Mesh(glowGeometry, glowMaterial);
+  scene.add(mouseGlowSphere);
+
+  // Partikülleri oluştur ve ekle
+  const particles = createMouseParticles();
+  mouseGlowSphere.add(particles);
+  mouseGlowSphere.particles = particles; // Referansı sakla
 
   // Raycaster
   raycaster = new THREE.Raycaster();
@@ -78,18 +153,58 @@ function init() {
   // Create connections
   createConnections();
 
+  // Create Title
+  createGlowingTitle();
+
   // Events
   window.addEventListener('resize', onWindowResize);
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('click', onClick);
 }
 
+function createGlowingTitle() {
+  // Fiziksel küre oluştur
+  const titleGeometry = new THREE.TorusKnotGeometry( 1, 0.21, 64, 12 ); 
+
+  const titleMaterial = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(0x00ffff),
+    emissive: new THREE.Color(0x00ffff),
+    emissiveIntensity: 0.025,
+    metalness: 0.5,
+    roughness: 0.4,
+    transparent: true,
+    opacity: 0.75,
+    clearcoat: 1,
+    clearcoatRoughness: 0.1,
+    transmission: 0.6
+  });
+  
+  const titleSphere = new THREE.Mesh(titleGeometry, titleMaterial);
+  titleSphere.position.set(0, 0, 0); // Sayfanın tepesine yerleştir
+  titleSphere.userData = { başlık: "ProjectYB RoadMap", açıklama: "Ana başlık", tarih: "", durum: "Aktif" };
+  titleSphere.isRoadmapSphere = true;
+  scene.add(titleSphere);
+  spheres.push(titleSphere); // Fizik etkileşimi için listeye ekle
+
+  // 3D Text for title
+  const titleText = createTextSprite("ProjectYB RoadMap", {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: 'white'
+  });
+  titleText.position.y = 2.5;
+  titleText.scale.multiplyScalar(1.5);
+  titleSphere.add(titleText);
+}
+
 function createSpheres() {
   const radius = 8;
-  const sphereRadius = 2.5;
+  // const sphereRadius = 2.5;
+  var sphereRadius = 2.5;
 
   roadmapData.forEach((item, i) => {
-    const angle = (i / roadmapData.length) * Math.PI * 2;
+    sphereRadius = sphereRadius * 0.90
+    const angle = ((i / roadmapData.length) * Math.PI * 2) - 30; // Başlangıç açısını yukarı kaydır);
     const x = Math.cos(angle) * radius;
     const y = Math.sin(angle) * radius;
     const z = Math.sin(angle * 2) * 2;
@@ -97,17 +212,30 @@ function createSpheres() {
     // Liquid glass material
     const material = new THREE.MeshPhysicalMaterial({
       color: item.durum.includes('Yapım') || item.durum.includes('Tamamlandı') 
-        ? new THREE.Color(0xff6b00) 
-        : new THREE.Color(0x8b5cf6),
-      metalness: 0.2,
-      roughness: 0.1,
+        ? new THREE.Color(0x6fbd66) 
+        : new THREE.Color(0xff6b00),
+        // : new THREE.Color(0x8b5cf6), // mor
+      
+      transmission: item.durum.includes('Yapım') || item.durum.includes('Tamamlandı') 
+        ? 0.9
+        : 0.9,
+      emissive: item.durum.includes('Yapım') || item.durum.includes('Tamamlandı') 
+        ? new THREE.Color(0x6fbd66) 
+        : new THREE.Color(0xff6b00),
+      emissiveIntensity: item.durum.includes('Yapım') || item.durum.includes('Tamamlandı') 
+        ? 0.015 
+        : 0,
+
+
+        
+      metalness: 0.01,
+      roughness: 0.3,
       clearcoat: 1,
       clearcoatRoughness: 0.1,
-      transmission: 0.9,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.6,
       reflectivity: 0.8,
-      side: THREE.DoubleSide
+      //side: THREE.DoubleSide
     });
 
     const geometry = new THREE.SphereGeometry(sphereRadius, 64, 64);
@@ -137,7 +265,7 @@ function create3DText(item, parentSphere, sphereRadius) {
 
   // Tarih ve durum için text
   const infoText = createTextSprite(`${item.tarih} - ${item.durum}`, {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'normal',
     color: item.durum.includes('Yapım') || item.durum.includes('Tamamlandı') 
       ? '#ffcc00' 
@@ -212,28 +340,28 @@ function onMouseMove(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(spheres);
+  // Mouse konumunu 3D dünyaya çevir
+  const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+  vector.unproject(camera);
+  const dir = vector.sub(camera.position).normalize();
+  const distance = -camera.position.z / dir.z;
+  const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+  
+  // Global pozisyonu güncelle
+  mouseWorldPosition.copy(pos);
+  lastMouseMoveTime = Date.now();
 
-  if (intersects.length > 0) {
-    const object = intersects[0].object;
-    
-    // Text sprite'lara tooltip gösterme
-    if (object.isTextSprite) {
-      tooltip.style.display = 'none';
-      return;
-    }
-    
-    // Sadece kürelere tooltip göster
-    if (object.userData && Object.hasOwn(object.userData, 'başlık')) {
-      showTooltip(object, event);
-    } else {
-      tooltip.style.display = 'none';
-    }
-  } else {
-    tooltip.style.display = 'none';
+  // Mouse light'ı mouse pozisyonuna yerleştir
+  if (mouseLight) {
+    mouseLight.position.copy(pos);
+  }
+  
+  // Mouse glowing küresini mouse pozisyonuna yerleştir
+  if (mouseGlowSphere) {
+    mouseGlowSphere.position.copy(pos);
   }
 }
+
 
 function onClick(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -259,15 +387,59 @@ function showTooltip(object, event) {
   tooltip.style.top = event.clientY + 'px';
 }
 
+function createMouseParticles() {
+  const particleCount = 3;
+  const particles = new THREE.Group();
+  
+  for (let i = 0; i < particleCount; i++) {
+    const geometry = new THREE.SphereGeometry(0.08, 6, 6);
+    const material = new THREE.MeshPhysicalMaterial({
+      color: 0xc941eb,
+      emissive: 0xc941eb,
+      emissiveIntensity: 1,
+      transparent: true,
+      opacity: 0.7,
+      metalness: 0,
+      roughness: 0
+    });
+    const particle = new THREE.Mesh(geometry, material);
+    
+    // Dairesel düzen
+    const angle = (i / particleCount) * Math.PI * 2;
+    const distance = 0.5;
+    particle.position.set(
+      Math.cos(angle) * distance,
+      Math.sin(angle) * distance,
+      0
+    );
+    
+    particle.userData = { angle: angle, originalDistance: distance };
+    particles.add(particle);
+  }
+  
+  return particles;
+}
+
 function animate() {
   requestAnimationFrame(animate);
   
+  const time = Date.now() * 0.005;
+  const currentTime = Date.now();
+  
+  // Başlık animasyonu
+  const titleSphere = spheres[spheres.length - 1];
+  if (titleSphere && titleSphere.material) {
+    const hue = (time * 0.01) % 1;
+    const color = new THREE.Color().setHSL(hue, 0.5, 0.5);
+    titleSphere.material.emissive = color;
+    titleSphere.material.color = color;
+  }
+
   // Kürelerde hafif dönüş animasyonu
   spheres.forEach(sphere => {
     sphere.rotation.x += 0.005;
     sphere.rotation.y += 0.005;
     
-    // Text'leri de döndür ki her zaman kameraya baksın
     sphere.children.forEach(child => {
       if (child instanceof THREE.Sprite) {
         child.quaternion.copy(camera.quaternion);
@@ -275,6 +447,93 @@ function animate() {
     });
   });
 
+  // Mouse glowing küresi ve partiküller (HER ZAMAN)
+  if (mouseGlowSphere) {
+    // Mouse pozisyonunu sürekli güncelle
+    mouseGlowSphere.position.copy(mouseWorldPosition);
+    
+    // Zaman bazlı animasyon
+    const time = Date.now() * 0.005;
+    const currentTime = Date.now();
+    
+    // Küreye rainbow renk
+    const hue = (time * 0.1) % 1;
+    const color = new THREE.Color().setHSL(hue, 1, 0.7);
+    mouseGlowSphere.material.emissive = color;
+    mouseGlowSphere.material.color = color;
+    
+    // Küçük pulsing efekti
+    const scale = 0.6 + Math.sin(time * 5) * 0.15;
+    mouseGlowSphere.scale.set(scale, scale, scale);
+    
+    // MOUSE IŞIĞI RADIUS VE FADE KONTROLÜ
+    const timeSinceMove = currentTime - lastMouseMoveTime;
+    const maxRadius = 10; // Maksimum etki alanı
+    const minRadius = 2;  // Minimum etki alanı
+        
+    const fadeFactor = Math.exp(-timeSinceMove / 2000); // 2 saniyelik half-life
+    let currentRadius = minRadius + (maxRadius - minRadius) * fadeFactor;
+    let lightIntensity = 0.5 + (1.0 * fadeFactor);
+
+    if (timeSinceMove > 1000) {
+      // 1 saniyeden sonra lineer azalma
+      const fadeProgress = Math.min(1, (timeSinceMove - 1000) / 3000); // 3 saniyede tamamen kaybol
+      currentRadius = Math.max(minRadius, currentRadius);
+      lightIntensity = Math.max(0, lightIntensity);
+      
+      // Tamamen kaybolma
+      if (fadeProgress >= 1.5) {
+        currentRadius = minRadius;
+        lightIntensity = 0;
+      }
+    }
+    
+    // Mouse light radius ve intensity güncelle
+    if (mouseLight) {
+      mouseLight.distance = currentRadius;
+      mouseLight.intensity = lightIntensity;
+    }
+    
+    // Partikül animasyonu
+    if (mouseGlowSphere.particles) {
+      mouseGlowSphere.particles.rotation.z = time * 0.25;
+      
+      mouseGlowSphere.particles.children.forEach((particle, i) => {
+        // Partiküllerin dairesel hareketi
+        const userData = particle.userData;
+        const newAngle = userData.angle + time * 0.15;
+        const distance = userData.originalDistance + Math.sin(time * 2.0 + i) * 2.0;
+        
+        particle.position.x = Math.cos(newAngle) * distance;
+        particle.position.y = Math.sin(newAngle) * distance;
+        
+        // Partikül renk değişimi
+        const particleHue = (hue + i * 0.8) % 1;
+        const particleColor = new THREE.Color().setHSL(particleHue, 1, 0.7);
+        particle.material.emissive = particleColor;
+        particle.material.color = particleColor;
+        
+        // Partikül pulsing ve fade
+        const particleScale = 0.6 + Math.sin(time * 4 + i) * 0.5;
+        particle.scale.set(particleScale, particleScale, particleScale);
+        
+        // Partikül opacity fade
+        const particleOpacity = Math.max(0.1, mouseGlowSphere.material.opacity * 0.7);
+        particle.material.opacity = particleOpacity;
+      });
+    }
+    
+    // Ana küre opacity fade
+    const fadeProgress = Math.min(1, timeSinceMove / 4000); // 4 saniyede fade
+    const finalOpacity = Math.max(0.1, 0.9 - (0.8 * fadeProgress));
+    mouseGlowSphere.material.opacity = finalOpacity;
+  }
   controls.update();
-  renderer.render(scene, camera);
+  
+  // Bloom efektli render
+  if (composer && typeof composer.render === 'function') {
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
 }
