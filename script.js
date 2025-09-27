@@ -388,9 +388,6 @@ function onHover(event) {
     // 3) userData kontrolü
     if (hit.userData && hit.userData.başlık) {
       // her harekette renk değiştirmek istemiyorsan bu satırı koşullu yap
-      if (lastHovered !== hit) {
-        hit.material.color.set(Math.random() * 0xffffff);
-      }
       showTooltip(hit, event);
       lastHovered = hit;
     } else {
