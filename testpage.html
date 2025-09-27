@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D HTML Küp Test</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #0a0a2a;
+      color: white;
+    }
+    
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+    
+    #controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      max-width: 250px;
+    }
+    
+    #controls label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    #controls input[type="range"] {
+      width: 200px;
+      margin-bottom: 10px;
+    }
+    
+    #controls span {
+      color: #00ffff;
+      font-weight: bold;
+    }
+    
+    #controls button {
+      background: #00ffff;
+      color: black;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 3px;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    
+    #controls button:hover {
+      background: #00cccc;
+    }
+    
+    /* CSS3DRenderer için gerekli stiller */
+    .css3d-element {
+      background: rgba(0, 0, 0, 0.8);
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      border-radius: 10px;
+      padding: 20px;
+      box-sizing: border-box;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      transform-origin: center center;
+    }
+    
+    .css3d-element h2 {
+      margin-top: 0;
+      color: #00ffff;
+      font-size: 16px;
+    }
+    
+    .css3d-element button {
+      background: #00ffff;
+      color: black;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 3px;
+      font-size: 12px;
+    }
+    
+    .css3d-element button:hover {
+      background: #00cccc;
+    }
+    
+    .css3d-element input {
+      padding: 6px;
+      margin: 3px;
+      border-radius: 5px;
+      border: 1px solid #00ffff;
+      background: rgba(0,0,0,0.5);
+      color: white;
+      font-size: 12px;
+    }
+    
+    .css3d-element img {
+      max-width: 80px;
+      border-radius: 5px;
+    }
+    
+    .css3d-element ul {
+      font-size: 12px;
+      text-align: left;
+      padding-left: 20px;
+      margin: 10px 0;
+    }
+    
+    .css3d-element p {
+      font-size: 12px;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="container"></div>
+  
+  <!-- Kontrol Paneli -->
+  <div id="controls">
+    <label for="contentWidth">İçerik Genişliği: <span id="widthValue">100</span>px</label>
+    <input type="range" id="contentWidth" min="50" max="1000" step="10" value="250">
+    
+    <label for="contentHeight">İçerik Yüksekliği: <span id="heightValue">100</span>px</label>
+    <input type="range" id="contentHeight" min="50" max="1000" step="10" value="270">
+    
+    <label for="contentBorder">İçerik Kenarlık: <span id="borderValue">2</span>px</label>
+    <input type="range" id="contentBorder" min="0" max="10" step="1" value="2">
+    
+    <label for="depthScale">Derinlik Oranı: <span id="depthValue">1.0</span>x</label>
+    <input type="range" id="depthScale" min="0.1" max="30" step="0.1" value="5.5">
+    
+    <label for="rotationSpeed">Dönme Hızı: <span id="speedValue">0.2</span>x</label>
+    <input type="range" id="rotationSpeed" min="0" max="2" step="0.1" value="0.125">
+    
+    <button id="toggleMetalCube">Metal Küpü Gizle</button>
+    <button id="resetCamera">Kamerayı Sıfırla</button>
+    <button id="toggleRotation">Dönmeyi Durdur</button>
+  </div>
+  
+  <!-- Three.js ve gerekli kütüphaneler -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/renderers/CSS3DRenderer.js"></script>
+  
+  <!-- Kendi script dosyan -->
+  <script src="testcube.js"></script>
+</body>
+</html>
